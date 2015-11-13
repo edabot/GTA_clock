@@ -31,13 +31,16 @@
 Adafruit_7segment matrix = Adafruit_7segment(); //initializing display
 
 int startTime = 1008;         //setting the initial time on the clock
-int elapsedTime;              //variable for elapsed time since start of sketch       
+int currentTime;              //the time now       
 int alarmLevel = 0;           //just how annoying and bad the alarm is. 0 is off
-int alarmTime = 1010;             //when is this going off?
-int alarmGap = 9;             //minutes between alarm levels/snoozes
+int alarmTime = 1010;         //when is this going off?
+int snoozeTime = 1010;        //next time for alarm to go off
+int alarmGap = 1;             //minutes between alarm levels/snoozes
 int buttonCounter = 0;            //remaining pushes for the button for alarm
-int wantedLevels[] = {1,4,10,30,50,100};
+int wantedValues[] = {1,4,10,30,50,100};
                               //number of pushes needed for each alarm level
+int alarmSpeeds[] = {0,1000,600,450,300,200,100};
+                              //rate of flashing and buzzinf for each alarm level
 
 void setup() {
 #ifndef __AVR_ATtiny85__
@@ -45,19 +48,25 @@ void setup() {
   Serial.println("7 Segment Backpack Test");
 #endif
   matrix.begin(0x70);
-  matrix.setBrightness(1);    //scale of 0 to 15
-  pinMode(9, OUTPUT);         //piezo buzzer for alarm
-  for (int i=2;i<8;i++){
-    pinMode(i, OUTPUT);       //LEDs for stars
+  matrix.setBrightness(1);    //scale of 0 to 15 for display brightness
+  
+  pinMode(9, OUTPUT);         //piezo buzzer for alarm on pin 9
+  for (int i=2;i<8;i++){      //LEDs for stars on pins 2-7
+    pinMode(i, OUTPUT);       
   }
 }
 
 void loop() {
-  elapsedTime = getTimeNow(millis());  //getting the 4-digit elapsed time from start
-  showTime(elapsedTime+startTime);     //displaying elapsed + start time
-  //beep(200); 
-  flashAndBuzz(100);
-  //delay(1000);
+  currentTime = getTimeNow(millis()) + startTime;  
+        //getting the 4-digit elapsed time from start and adding start time
+  showTime(currentTime);     //displaying elapsed + start time
+  if (currentTime == alarmTime && alarmLevel==0){
+    alarmLevel = 1;
+  }
+
+   if (alarmLevel>0){
+    flashAndBuzz(alarmSpeeds[alarmLevel],alarmLevel);
+  }
 }
 
 //converting the change in millis time to change in 4-digit time
@@ -84,44 +93,14 @@ void showTime(int fourDigitTime){
   matrix.writeDigitRaw(2, 0x02);
   matrix.writeDisplay();
 }
-/*
-void beep(unsigned char delayms){
-  analogWrite(9, 20);      // Almost any value can be used except 0 and 255
-                           // experiment to get the best tone
-  delay(delayms);          // wait for a delayms ms
-      // 0 turns it off
-  delay(delayms);          // wait for a delayms ms   
-}  */
 
-void alarmDisplay(int level){
-  switch (level){
-    case 0:   //no alarm
-      flashAndBuzz(1000);
-      break;
-    case 1:  
 
-      break;
-    case 2:   
 
-      break;
-    case 3:  
-
-      break;
-    case 4:   
-
-      break;
-    case 5:   
-
-      break;
-    case 6:  
-
-      break;
-  }
-}
-
-void flashAndBuzz (int speed) {
+void flashAndBuzz (int speed, int stars) {
   if (millis()%speed > speed/2) {
-    digitalWrite(2, HIGH); 
+    for (int i=2;i<=stars+1;i++){
+      digitalWrite(i, HIGH); 
+    }
     analogWrite(9, 20);
   }
   else {
