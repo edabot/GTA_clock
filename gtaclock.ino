@@ -28,9 +28,10 @@
 #include "Adafruit_LEDBackpack.h"
 #include "Adafruit_GFX.h"
 
-Adafruit_7segment matrix = Adafruit_7segment();
-int startTime = 1008;
-int currentTime = 1008;
+Adafruit_7segment matrix = Adafruit_7segment(); //initializing display
+
+int startTime = 1008;         //setting the initial time on the clock
+int elapsedTime;              //variable for elapsed time since start of sketch       
 
 void setup() {
 #ifndef __AVR_ATtiny85__
@@ -38,33 +39,48 @@ void setup() {
   Serial.println("7 Segment Backpack Test");
 #endif
   matrix.begin(0x70);
-  matrix.setBrightness(1);
-    pinMode(9, OUTPUT);
-
+  matrix.setBrightness(1);    //scale of 0 to 15
+  pinMode(9, OUTPUT);         //piezo buzzer for alarm
+  for (int i=2;i<8;i++){
+    pinMode(i, OUTPUT);       //LEDs for stars
+  }
 }
 
 void loop() {
+  elapsedTime = getTimeNow(millis());  //getting the 4-digit elapsed time from start
+  showTime(elapsedTime+startTime);     //displaying elapsed + start time
+  //beep(200); 
   
- currentTime = getTimeNow(millis());
- showTime(currentTime);
-    beep(200); 
-
-  delay(1000);
-  
-  
+if (millis()%1000 > 500) {
+  digitalWrite(2, HIGH); 
+}
+else {
+  digitalWrite(2, LOW); 
+}
+  //delay(1000);
 }
 
+//converting the change in millis time to change in 4-digit time
 int getTimeNow(unsigned long timeRaw){
-  int tempTime = floor(timeRaw / 1000);
-  int tempHours = floor(tempTime/3600);
-  tempHours = tempHours % 12;
-  if (tempHours == 0) tempHours=12;
-  int tempMinutes = floor((tempTime%3600)/60);
-  int showTime = tempHours * 100 + tempMinutes;
+  int tempTime = floor(timeRaw / 1000);   //dropping it to seconds
+  int tempHours = floor(tempTime/3600);   //getting the hours
+  tempHours = tempHours % 12;             //modulo 12 on the hours
+  int tempMinutes = floor((tempTime%3600)/60);  //getting the minutes
+  int showTime = tempHours * 100 + tempMinutes; //combining hours and minutes
   return showTime;
 }
 void showTime(int fourDigitTime){
+  //checking to see if minutes are over 60. If so, add 40 to turn it into an extra hour
+  if (fourDigitTime%100 >= 60){
+    fourDigitTime += 40;
+  }
+  //checking to see if hours are over 12 and correcting
+  if (floor(fourDigitTime/100)>12) {
+    fourDigitTime-=1200;
+  }
+  //printing the numbers
   matrix.print(fourDigitTime);
+  //writing the colon in the middle
   matrix.writeDigitRaw(2, 0x02);
   matrix.writeDisplay();
 }
