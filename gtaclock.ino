@@ -41,6 +41,15 @@ int wantedValues[] = {1,4,10,30,50,100};
                               //number of pushes needed for each alarm level
 int alarmSpeeds[] = {0,1000,600,450,300,200,100};
                               //rate of flashing and buzzinf for each alarm level
+const int buttonPin = 8;      // the number of the pushbutton pin
+int buttonState = 0;          
+int lastButtonState = LOW;   // the previous reading from the input pin
+
+// the following variables are long's because the time, measured in miliseconds,
+// will quickly become a bigger number than can be stored in an int.
+long lastDebounceTime = 0;  // the last time the output pin was toggled
+long debounceDelay = 50;    // the debounce time; increase if the output flickers
+
 
 void setup() {
 #ifndef __AVR_ATtiny85__
@@ -50,23 +59,50 @@ void setup() {
   matrix.begin(0x70);
   matrix.setBrightness(1);    //scale of 0 to 15 for display brightness
   
-  pinMode(9, OUTPUT);         //piezo buzzer for alarm on pin 9
+  
   for (int i=2;i<8;i++){      //LEDs for stars on pins 2-7
     pinMode(i, OUTPUT);       
   }
+  pinMode(buttonPin, INPUT);  //button on pin 8
+  pinMode(9, OUTPUT);         //piezo buzzer for alarm on pin 9
 }
 
 void loop() {
   currentTime = getTimeNow(millis()) + startTime;  
         //getting the 4-digit elapsed time from start and adding start time
   showTime(currentTime);     //displaying elapsed + start time
+
+  //alarm going off first time
   if (currentTime == alarmTime && alarmLevel==0){
     alarmLevel = 1;
+    buttonCounter = wantedValues[alarmLevel-1];
   }
 
-   if (alarmLevel>0){
+  if (alarmLevel>0 && buttonCounter>0){
     flashAndBuzz(alarmSpeeds[alarmLevel],alarmLevel);
   }
+
+//reading the button and correcting for debounce
+ int reading = digitalRead(buttonPin);
+  if (reading != lastButtonState) {
+    // reset the debouncing timer
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    // whatever the reading is at, it's been there for longer
+    // than the debounce delay, so take it as the actual current state:
+
+    // if the button state has changed:
+    if (reading != buttonState) {
+      buttonState = reading;
+      if (buttonState==HIGH && buttonCounter>0){
+        buttonCounter--;
+      }
+    }
+ 
+  }
+  
 }
 
 //converting the change in millis time to change in 4-digit time
