@@ -32,6 +32,12 @@ Adafruit_7segment matrix = Adafruit_7segment(); //initializing display
 
 int startTime = 1008;         //setting the initial time on the clock
 int elapsedTime;              //variable for elapsed time since start of sketch       
+int alarmLevel = 0;           //just how annoying and bad the alarm is. 0 is off
+int alarmTime = 1010;             //when is this going off?
+int alarmGap = 9;             //minutes between alarm levels/snoozes
+int buttonCounter = 0;            //remaining pushes for the button for alarm
+int wantedLevels[] = {1,4,10,30,50,100};
+                              //number of pushes needed for each alarm level
 
 void setup() {
 #ifndef __AVR_ATtiny85__
@@ -50,13 +56,7 @@ void loop() {
   elapsedTime = getTimeNow(millis());  //getting the 4-digit elapsed time from start
   showTime(elapsedTime+startTime);     //displaying elapsed + start time
   //beep(200); 
-  
-if (millis()%1000 > 500) {
-  digitalWrite(2, HIGH); 
-}
-else {
-  digitalWrite(2, LOW); 
-}
+  flashAndBuzz(100);
   //delay(1000);
 }
 
@@ -84,11 +84,49 @@ void showTime(int fourDigitTime){
   matrix.writeDigitRaw(2, 0x02);
   matrix.writeDisplay();
 }
-
+/*
 void beep(unsigned char delayms){
   analogWrite(9, 20);      // Almost any value can be used except 0 and 255
                            // experiment to get the best tone
   delay(delayms);          // wait for a delayms ms
-  analogWrite(9, 0);       // 0 turns it off
+      // 0 turns it off
   delay(delayms);          // wait for a delayms ms   
-}  
+}  */
+
+void alarmDisplay(int level){
+  switch (level){
+    case 0:   //no alarm
+      flashAndBuzz(1000);
+      break;
+    case 1:  
+
+      break;
+    case 2:   
+
+      break;
+    case 3:  
+
+      break;
+    case 4:   
+
+      break;
+    case 5:   
+
+      break;
+    case 6:  
+
+      break;
+  }
+}
+
+void flashAndBuzz (int speed) {
+  if (millis()%speed > speed/2) {
+    digitalWrite(2, HIGH); 
+    analogWrite(9, 20);
+  }
+  else {
+    analogWrite(9, 0);  
+    digitalWrite(2, LOW); 
+  }
+}
+
