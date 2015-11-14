@@ -30,25 +30,25 @@
 
 Adafruit_7segment matrix = Adafruit_7segment(); //initializing display
 
-int startTime = 1008;         //setting the initial time on the clock
+int startTime = 1009;         //setting the initial time on the clock
 int currentTime;              //the time now       
 int alarmLevel = 0;           //just how annoying and bad the alarm is. 0 is off
-int alarmTime = 1010;         //when is this going off?
-int snoozeTime = 1010;        //next time for alarm to go off
+int alarmTime = 1009;         //when is this going off?
+int snoozeTime = 1009;        //next time for alarm to go off
 int alarmGap = 1;             //minutes between alarm levels/snoozes
 int buttonCounter = 0;            //remaining pushes for the button for alarm
-int wantedValues[] = {1,4,10,30,50,100};
+int wantedValues[] = {1,2,3,4,5,10};
                               //number of pushes needed for each alarm level
 int alarmSpeeds[] = {0,1000,600,450,300,200,100};
                               //rate of flashing and buzzinf for each alarm level
 const int buttonPin = 8;      // the number of the pushbutton pin
 int buttonState = 0;          
-int lastButtonState = LOW;   // the previous reading from the input pin
+int lastButtonState = 0;   // the previous reading from the input pin
 
 // the following variables are long's because the time, measured in miliseconds,
 // will quickly become a bigger number than can be stored in an int.
 long lastDebounceTime = 0;  // the last time the output pin was toggled
-long debounceDelay = 50;    // the debounce time; increase if the output flickers
+long debounceDelay = 10;    // the debounce time; increase if the output flickers
 
 
 void setup() {
@@ -68,41 +68,87 @@ void setup() {
 }
 
 void loop() {
-  currentTime = getTimeNow(millis()) + startTime;  
+  Serial.println(buttonCounter);
+  Serial.println(alarmLevel);
+  
+  currentTime = getTimeNow(millis()*5) + startTime;  
         //getting the 4-digit elapsed time from start and adding start time
   showTime(currentTime);     //displaying elapsed + start time
 
   //alarm going off first time
   if (currentTime == alarmTime && alarmLevel==0){
     alarmLevel = 1;
+    snoozeTime = alarmTime;
     buttonCounter = wantedValues[alarmLevel-1];
   }
 
-  if (alarmLevel>0 && buttonCounter>0){
+  //alarm going off times 2-6
+  if (currentTime == snoozeTime && buttonCounter == 0){
+    buttonCounter = wantedValues[alarmLevel-1];
+  }
+
+  if (buttonCounter>0){
     flashAndBuzz(alarmSpeeds[alarmLevel],alarmLevel);
   }
 
+  //resetting alarmLevel once series is finished
+
+
 //reading the button and correcting for debounce
  int reading = digitalRead(buttonPin);
+
   if (reading != lastButtonState) {
+
     // reset the debouncing timer
     lastDebounceTime = millis();
   }
 
-  if ((millis() - lastDebounceTime) > debounceDelay) {
+// if the button state has changed:
+    if (reading != buttonState) {
+      buttonState = reading;
+      //things change if it's the last button press
+      if (buttonState==1 && buttonCounter==1){
+        buttonCounter--;          //sets button Counter to 0
+        alarmLevel++;             //increases alarmLevel
+        snoozeTime += alarmGap;   //changes snoozeTime
+        analogWrite(9, 0);  
+        digitalWrite(2, LOW); 
+      }
+      //just change buttonCounter if it's >1
+      else if (buttonState==1 && buttonCounter>1){
+        buttonCounter--;          //decrements button counter
+      }      
+    }
+
+  //resetting evrything back to start once series is complete  
+  if (alarmLevel==7) {
+    alarmLevel=0;
+    snoozeTime=alarmTime;
+  }  
+delay(1);
+/*  if ((millis() - lastDebounceTime) > debounceDelay) {
     // whatever the reading is at, it's been there for longer
     // than the debounce delay, so take it as the actual current state:
 
     // if the button state has changed:
     if (reading != buttonState) {
       buttonState = reading;
-      if (buttonState==HIGH && buttonCounter>0){
-        buttonCounter--;
+      //things change if it's the last button press
+      if (buttonState==1 && buttonCounter==1){
+        buttonCounter--;          //sets button Counter to 0
+        alarmLevel++;             //increases alarmLevel
+        snoozeTime += alarmGap;   //changes snoozeTime
+        analogWrite(9, 0);  
+        digitalWrite(2, LOW); 
       }
+      //just change buttonCounter if it's >1
+      else if (buttonState==1 && buttonCounter>1){
+        buttonCounter--;          //decrements button counter
+      }      
     }
  
   }
-  
+*/    
 }
 
 //converting the change in millis time to change in 4-digit time
@@ -114,6 +160,8 @@ int getTimeNow(unsigned long timeRaw){
   int showTime = tempHours * 100 + tempMinutes; //combining hours and minutes
   return showTime;
 }
+
+//displays the time on the LED display
 void showTime(int fourDigitTime){
   //checking to see if minutes are over 60. If so, add 40 to turn it into an extra hour
   if (fourDigitTime%100 >= 60){
@@ -137,11 +185,12 @@ void flashAndBuzz (int speed, int stars) {
     for (int i=2;i<=stars+1;i++){
       digitalWrite(i, HIGH); 
     }
-    analogWrite(9, 20);
+    analogWrite(9, 1);
   }
   else {
     analogWrite(9, 0);  
     digitalWrite(2, LOW); 
   }
+
 }
 
