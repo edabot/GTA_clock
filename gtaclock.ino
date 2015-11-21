@@ -37,10 +37,12 @@ int alarmTime = 1009;         //when is this going off?
 int snoozeTime = 1009;        //next time for alarm to go off
 int alarmGap = 1;             //minutes between alarm levels/snoozes
 int buttonCounter = 0;            //remaining pushes for the button for alarm
-int wantedValues[] = {1,2,3,4,5,10};
+int wantedValues[] = {1,4,10,25,50,100};
                               //number of pushes needed for each alarm level
 int alarmSpeeds[] = {0,1000,600,450,300,200,100};
                               //rate of flashing and buzzinf for each alarm level
+int alarmValues[] = {1,4,10,25,50,100};
+                              //number of pushes needed for each alarm level
 const int buttonPin = 8;      // the number of the pushbutton pin
 int buttonState = 0;          
 int lastButtonState = 0;   // the previous reading from the input pin
@@ -112,7 +114,9 @@ void loop() {
         alarmLevel++;             //increases alarmLevel
         snoozeTime += alarmGap;   //changes snoozeTime
         analogWrite(9, 0);  
-        digitalWrite(2, LOW); 
+        for (int i=2;i<=7;i++){
+          digitalWrite(i, LOW); 
+        }
       }
       //just change buttonCounter if it's >1
       else if (buttonState==1 && buttonCounter>1){
@@ -125,7 +129,7 @@ void loop() {
     alarmLevel=0;
     snoozeTime=alarmTime;
   }  
-delay(1);
+delay(10);
 /*  if ((millis() - lastDebounceTime) > debounceDelay) {
     // whatever the reading is at, it's been there for longer
     // than the debounce delay, so take it as the actual current state:
@@ -185,11 +189,13 @@ void flashAndBuzz (int speed, int stars) {
     for (int i=2;i<=stars+1;i++){
       digitalWrite(i, HIGH); 
     }
-    analogWrite(9, 1);
+    analogWrite(9, alarmValues[alarmLevel-1]);
   }
   else {
     analogWrite(9, 0);  
-    digitalWrite(2, LOW); 
+    for (int i=2;i<=stars+1;i++){
+         digitalWrite(i, LOW); 
+    }
   }
 
 }
